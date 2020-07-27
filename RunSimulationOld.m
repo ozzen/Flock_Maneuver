@@ -82,13 +82,10 @@ for k = 0:control_steps - 1
         
 %%      Logistic function based turning
         if k >= floor(params.start_turn/control_jump) && theta <= alpha*theta_turn
-%             for i = 1:params.num_leaders
-%                 w_turn = 1/(1 + exp(1 * ((100*(theta/theta_turn)) - 75)));
-%             end
-%             if w_turn < 0.0001
-%                 w_turn = 0;
-%             end
             w_turn = 1/(1 + exp(1 * ((100*(theta/theta_turn)) - 75)));
+            if w_turn < 0.0001
+                w_turn = 0;
+            end
             for idx = 1:numel(edge_agents)
                 a(:,edge_agents(idx)) = trim_vec(w_turn*(a_past(:,edge_agents(idx)) + params.dt * params.jerk * acc_turn) + (1 - w_turn)*a(:,edge_agents(idx)), params.amax);
                 a_past(:,edge_agents(idx)) = a(:,edge_agents(idx));
