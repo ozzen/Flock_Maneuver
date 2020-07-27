@@ -82,7 +82,6 @@ for k = 0:control_steps - 1
                 end
                 avg_vel(i,:) = mean(vel,2).';
                 theta(i) = atan2d(norm(cross(avg_vel_init(1,:),avg_vel(i,:))),dot(avg_vel_init(1,:),avg_vel(i,:)));
-                
             end
         else
             theta(1:params.num_leaders) = 1000;
@@ -94,11 +93,11 @@ for k = 0:control_steps - 1
 %             for i = 1:params.num_leaders
 %                 w_turn(i) = 1/(1 + exp(1 * ((100*(theta(i)/theta_turn)) - 75)));
 %             end
-%             if w_turn < 0.0001
-%                 w_turn = 0;
-%             end
             for idx = 1:numel(edge_agents)
                 w_turn(idx) = 1/(1 + exp(1 * ((100*(theta(idx)/theta_turn)) - 75)));
+                if w_turn(idx) < 0.0001
+                    w_turn(idx) = 0;
+                end 
                 a(:,edge_agents(idx)) = trim_vec(w_turn(idx)*(a_past(:,edge_agents(idx)) + params.dt * params.jerk * acc_turn) + (1 - w_turn(idx))*a(:,edge_agents(idx)), params.amax);
                 a_past(:,edge_agents(idx)) = a(:,edge_agents(idx));
             end
