@@ -48,7 +48,7 @@ if params.cmpc_prediction_model == 1 %point-model
 %     end
 end
 
-cost = cost/params.h + 1*(sum(u.^2)/params.h);
+cost = cost/params.h + 0.5*(sum(u.^2)/params.h);
 
 end
 
