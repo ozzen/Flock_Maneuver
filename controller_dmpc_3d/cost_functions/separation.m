@@ -1,5 +1,4 @@
 function [res] = separation(s)
-
 pos = squeeze(s(1,1:3,:));
 n = size(s, 3);
 
