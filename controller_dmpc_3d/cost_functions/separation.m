@@ -1,5 +1,4 @@
 function [res] = separation(s)
-% Usama Mehmood - Oct 2019
 
 pos = squeeze(s(1,1:3,:));
 n = size(s, 3);
@@ -12,4 +11,3 @@ for i = 1:n
 end
 
 end
-
