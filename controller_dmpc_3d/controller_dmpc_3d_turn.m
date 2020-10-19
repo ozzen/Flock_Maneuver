@@ -23,7 +23,6 @@ for i = 1:params.n
     [~, Index] = sort(sq_d(i,:));
     k_nearest_n = Index(1:params.knn+1);
     
-    
     params.w_m(1:numel(k_nearest_n)-1) = e_delta_vel(k_nearest_n(2:end))/sum(e_delta_vel(k_nearest_n(2:end)));
     
     s_local = s(1,:,k_nearest_n);
@@ -38,4 +37,3 @@ for i = 1:params.n
 end
 
 end
-
