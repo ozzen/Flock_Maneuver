@@ -73,7 +73,7 @@ params.quad = 0;
 params.cmpc_prediction_model = 1;
 
 % Distributed
-params.knn = 6;
+params.knn = 10;
 
 % Jerk dynamics
 % params.jerk = 0.15;
