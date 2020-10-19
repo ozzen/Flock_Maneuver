@@ -51,4 +51,3 @@ end
 cost = cost/params.h + 0.5*(sum(u.^2)/params.h);
 
 end
-
