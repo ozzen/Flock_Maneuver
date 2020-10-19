@@ -1,4 +1,4 @@
-function [traj,a] = RunSimulation(s_init, params, simNum, opt)%,psi,weight
+function [traj] = RunSimulation(s_init, params, simNum, opt)%,psi,weight
 
 s = zeros(params.steps, 12, params.n);
 accs = zeros(params.steps, 3, params.n);
