@@ -5,6 +5,8 @@ u_type = coder.typeof(zeros(3*params.h,1));
 s_type = coder.typeof(zeros(1,12,params.knn+1));
 
 codegen cost_sum.m -args {u_type, s_type, params_type} -o cost_sum
+codegen cost_sum_init.m -args {u_type, s_type, params_type} -o cost_sum_init
+% codegen cost_sum_rest.m -args {u_type, s_type, params_type} -o cost_sum_rest
 
 %% code gen angle_vectors(u,v)
 
@@ -18,6 +20,3 @@ u_type = coder.typeof(zeros(3*params.h,1));
 params_type = coder.typeof(params);
 
 codegen constraints.m -args {u_type, params_type} -o constraints
-
-
-
