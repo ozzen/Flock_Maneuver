@@ -4,11 +4,11 @@ clear
 close all
 
 %% Dependencies
-root = '/Users/root1/Desktop/Flocking_maneuvers/flock_maneuver/3D/';
+root = '/Users/root1/Desktop/Flocking_maneuvers/flock_maneuver/AWN-target/';
 
-addpath([root 'controller_cmpc_3d']);
-addpath([root 'controller_cmpc_3d/common']);
-addpath([root 'controller_cmpc_3d/cost_functions']);
+% addpath([root 'controller_cmpc_3d']);
+% addpath([root 'controller_cmpc_3d/common']);
+% addpath([root 'controller_cmpc_3d/cost_functions']);
 
 addpath([root 'controller_dmpc_3d']);
 addpath([root 'controller_dmpc_3d/common']);
@@ -23,23 +23,24 @@ params.vmax = 2;
 params.amax = 1;
 
 % Initialization options
-params.ipos = [-2,2];
+params.ipos = [-3,3];
 params.ivel = [0,1];
 
-params.delta_angle = deg2rad(30); % not used
-
+% Durations
 params.t_end = params.dt * 500;
-params.start_turn = 200;
-params.t_fix = 150;
-params.t_cont = 150;
-
-params.initsub = 1;
-params.num_leaders = 5;
-params.eta = 1000;
-params.jerk = 0.1;
-params.turn_angle = -120;
-
 params.steps = params.t_end / params.dt;
+
+% Turning controls
+params.turn = 1; %0:off, 1:on
+params.initsub = 1;
+params.num_leaders = 4;
+params.eta = 0;
+params.start_turn = 200;
+params.turn_angle = -170;
+% params.start_turn_new = 400;
+% params.start_turn_new_new = 600;
+
+% Quad specifications
 params.m = 0.650;
 params.L = 0.23;
 params.dmin = 4 * params.L;
@@ -49,33 +50,34 @@ params.Ixx = 7.5e-3;
 params.Iyy = 7.5e-3;
 params.Izz = 1.3e-2;
 
-%bounds
+% Bounds
 params.max_rotor_speed = inf; %rad/sec
 params.max_angular_speed = 10; %rad/sec
 params.max_angular_acc = 10; %rad/sec2
 
-%angular speed to thrust
+% Angular speed to thrust
 params.k_f = 3.13e-5; %b
 params.k_m = 7.5e-7; %d
 
-%wfitness
-params.wc = 15;
+% Weights
+params.wc = 20;
 params.ws = 30;
+params.wt = 80;
+params.target = [0;0;0];
+params.w_m = zeros(1,params.n);
 
-% plant model -> 1:Quadrotor, 0:point-model
+% Plant model -> 1:Quadrotor, 0:point-model
 params.quad = 0;
 
-%Prediction model [1:point, 2:quadcopter]
+% Prediction model [1:point, 2:quadcopter]
 params.cmpc_prediction_model = 1;
 
-% distributed
-params.knn = 10;
+% Distributed
+params.knn = 6;
 
-%Flock Turning
-params.turn = 1; %0:off, 1:on
-params.w_m = zeros(1,params.n);
-params.turn_acc = 0.15 * params.amax;
-
+% Jerk dynamics
+% params.jerk = 0.15;
+% params.turn_acc = 0.15 * params.amax;
 
 %Create mex files
 run controller_dmpc_3d/common/create_mex.m;
@@ -113,7 +115,7 @@ s_init = cat(2, pos, vel, omegas, rest);
 %% Run Simulation
 
 if params.initsub == 1
-    [traj,psi,weight] = RunSimulation(s_init, params, 1, opt);
+    [traj] = RunSimulation(s_init, params, 1, opt);
 else
     [traj,psi,weight] = RunSimulationOld(s_init, params, 1, opt);
 end
@@ -209,11 +211,6 @@ savefig(strcat(destPath, fname, '/',fname, '_fit.fig'));
 %% save trajectory params.steps x params.n
 save(strcat(destPath, fname, '/', fname, '.mat'), 'traj');
 
-
-
-
-
-
-
-
-
+%% save weights and turn angle
+% csvwrite(strcat(destPath, fname, '/', fname, '_weight.csv'),weight);
+% csvwrite(strcat(destPath, fname, '/', fname, '_theta.csv'),psi);
