@@ -1,35 +1,14 @@
-function [traj,psi,weight] = RunSimulation(s_init, params, simNum, opt)
+function [traj,a] = RunSimulation(s_init, params, simNum, opt)%,psi,weight
 
 s = zeros(params.steps, 12, params.n);
 accs = zeros(params.steps, 3, params.n);
 s(1,:,:) = s_init;
 
-w_turn(1:params.num_leaders) = 0;
-alpha = 0.9;
-count = 0;
-% if params.turn_angle <= 120
-%     slope = 0.3;
-%     mu = 170;
-% elseif params.turn_angle > 120 && params.turn_angle <= 140
-%     slope = 0.4;
-%     mu = 160;
-% else
-%     slope = 0.5;
-%     mu = 150;
-% end
-
-if params.turn_angle < 0
-    theta_turn = -params.turn_angle;
-else
-    theta_turn = params.turn_angle;
-end
-
 control_jump = uint32(params.ct / params.dt);
 control_steps = ceil(params.steps / control_jump);
 
-a = [zeros(1,params.n); zeros(1,params.n); ones(1,params.n)];
-a_past = zeros(3,20);
-a_past2 = zeros(3,20);
+a = [zeros(1,params.n); zeros(1,params.n); zeros(1,params.n)];
+a_init = [zeros(1,params.n); zeros(1,params.n); zeros(1,params.n)];
 
 for i = 1:params.n
     e(i).prev_e_R = 0;
@@ -55,97 +34,33 @@ for k = 0:control_steps - 1
         past_vel = squeeze(s(max(cur_step-1,1),4:6,:));
         cur_vel = squeeze(s(cur_step,4:6,:));
         delta_vel = sqrt(sum((cur_vel - past_vel).^2, 1)); %For turn logic
+        
         if k == floor(params.start_turn/control_jump)
             signal = 1;
             [edge_agents, acc_turn, axis_rot] = edge_cluster(s(1 + k*control_jump,:,:), params, signal);
+            params.target = acc_turn;
         end
-%         if k == floor((params.start_turn + params.t_fix + params.t_cont)/control_jump)
-%             signal = 2;
+%         if k == floor(params.start_turn_new/control_jump)
+%             signal = 1;
 %             [edge_agents, acc_turn, axis_rot] = edge_cluster(s(1 + k*control_jump,:,:), params, signal);
+%             params.target = acc_turn;
 %         end
-    end
+%         if k == floor(params.start_turn_new_new/control_jump)
+%             signal = 1;
+%             [edge_agents, acc_turn, axis_rot] = edge_cluster(s(1 + k*control_jump,:,:), params, signal);
+%             params.target = acc_turn;
+%         end
     
-    %Run MPC controller take first action
-    if params.turn
-        [a, fit_val, e_flag] = controller_dmpc_3d_turn(s(1 + k*control_jump,:,:), delta_vel, params, opt);
-%         if k >= floor(params.start_turn/control_jump) && k <= floor((params.start_turn+params.t_fix)/control_jump) %dot(P1,P2)/(norm(P1)*norm(P2))
         if k >= floor(params.start_turn/control_jump)
-            vel_init = squeeze(s(params.start_turn,4:6,:));
-            avg_vel_init = mean(vel_init,2).';
-            pos = squeeze(s(2*k,1:3,:));
-            sq_d_p = sq_distances_pairwise(pos);
+            [a, fit_val, e_flag] = controller_dmpc_3d_turn(s(1 + k*control_jump,:,:), delta_vel, params, opt);
+            [a_init, fit_val_init, e_flag_init] = controller_dmpc_3d_init(s(1 + k*control_jump,:,:), delta_vel, params, opt, edge_agents);
             for i = 1:numel(edge_agents)
-                [~, initIndex] = sort(sq_d_p(edge_agents(i),:));
-                init_sub = initIndex(1:params.knn+1);
-                for j = 1:numel(init_sub)
-                    vel(:,j) = squeeze(s(2*k,4:6,init_sub(j)));
-                end
-                avg_vel(i,:) = mean(vel,2).';
-                theta(i) = atan2d(norm(cross(avg_vel_init(1,:),avg_vel(i,:))),dot(avg_vel_init(1,:),avg_vel(i,:)));
+                 a(:,edge_agents(i)) = a_init(:,i);
             end
         else
-            theta(1:params.num_leaders) = 1000;
+            [a, fit_val, e_flag] = controller_dmpc_3d_turn(s(1 + k*control_jump,:,:), delta_vel, params, opt);
         end
-        psi(k+1,:) = theta;
-        
-%%      Logistic function based turning
-        if k >= floor(params.start_turn/control_jump) && mean(theta) <= alpha*theta_turn
-%             for i = 1:params.num_leaders
-%                 w_turn(i) = 1/(1 + exp(1 * ((100*(theta(i)/theta_turn)) - 75)));
-%             end
-            for idx = 1:numel(edge_agents)
-                w_turn(idx) = 1/(1 + exp(1 * ((100*(theta(idx)/theta_turn)) - 75)));
-                if w_turn(idx) < 0.0001
-                    w_turn(idx) = 0;
-                end 
-                a(:,edge_agents(idx)) = trim_vec(w_turn(idx)*(a_past(:,edge_agents(idx)) + params.dt * params.jerk * acc_turn) + (1 - w_turn(idx))*a(:,edge_agents(idx)), params.amax);
-                a_past(:,edge_agents(idx)) = a(:,edge_agents(idx));
-            end
-%             count = count + 2;
-        end
-        weight(k+1,:) = w_turn;
-        
-%%        Angle based turning
-%         if k >= floor(params.start_turn/control_jump) && theta <= beta*theta_turn
-% %             [edge_agents, acc_turn, axis_rot] = edge_cluster(s(1 + k*control_jump,:,:), params);
-% %             if k > params.start_turn + 100
-%             if theta >= alpha*theta_turn
-%                 w = min(50,2 * count * 0.8);
-%                 w_turn = max(0,w_turn - (1/w));
-% %                 w_turn = 1/(1 + (0.001*exp(10*(theta/theta_turn))));
-%                 for idx = 1:numel(edge_agents)
-%                     a(:,edge_agents(idx)) = trim_vec(w_turn*(a_past(:,edge_agents(idx)) + params.dt * params.jerk * acc_turn) + (1 - w_turn)*a(:,edge_agents(idx)), params.amax);
-%                     a_past(:,edge_agents(idx)) = a(:,edge_agents(idx));
-%                 end
-%             else 
-%                 for idx = 1:numel(edge_agents)
-%                     a(:,edge_agents(idx)) = trim_vec(a_past(:,edge_agents(idx)) + params.dt * params.jerk * acc_turn, params.amax);
-%                     a_past(:,edge_agents(idx)) = a(:,edge_agents(idx));
-%                 end
-%                 count = count + 1;
-%             end
-%         end
-%         weight(k+1,1) = w_turn;
-        
-%%        Fixed time turning        
-%         if k >= floor((params.start_turn + params.t_fix + params.t_cont)/control_jump) && k <= floor(((params.start_turn + params.t_fix + params.t_cont)+params.t_fix)/control_jump) %dot(P1,P2)/(norm(P1)*norm(P2))
-% %             [edge_agents, acc_turn, axis_rot] = edge_cluster(s(1 + k*control_jump,:,:), params);
-%             if k > params.start_turn + params.t_fix + params.t_cont + 100
-%                 for idx = 1:numel(edge_agents)
-%                     a(:,edge_agents(idx)) = trim_vec(w_turn*(a_past2(:,edge_agents(idx)) + params.dt * params.jerk * acc_turn) + (1 - w_turn)*a(:,edge_agents(idx)), params.amax);
-%                     a_past2(:,edge_agents(idx)) = a(:,edge_agents(idx));
-%                 end
-%                 w_turn = w_turn - (1/50);
-%             else 
-%                 for idx = 1:numel(edge_agents)
-%                     a(:,edge_agents(idx)) = trim_vec(a_past2(:,edge_agents(idx)) + params.dt * params.jerk * acc_turn, params.amax);
-%                     a_past2(:,edge_agents(idx)) = a(:,edge_agents(idx));
-%                 end
-%             end
-%             
-%         end
     else
-        %  [a, fit_val, e_flag, history] = controller_cmpc_3d(s(1 + k*control_jump,:,:), params, a, opt);
         [a, fit_val, e_flag] = controller_dmpc_3d(s(1 + k*control_jump,:,:), params, opt);
     end
     
