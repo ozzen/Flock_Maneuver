@@ -10,8 +10,8 @@ clear all
 close all
 
 %%
-dest_path = '/Users/root1/Desktop/Flocking_maneuvers/flock_maneuver/3D/Results/';
-source_path = '/Users/root1/Desktop/Flocking_maneuvers/flock_maneuver/3D/';
+dest_path = '/Users/admin/Desktop/Flocking_maneuvers/flock_maneuver/3D/Results/';
+source_path = '/Users/admin/Desktop/Flocking_maneuvers/flock_maneuver/3D/';
 
 %% dependencies
 % addpath([source_path 'm-scripts/']);
