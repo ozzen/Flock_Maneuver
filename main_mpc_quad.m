@@ -4,7 +4,7 @@ clear
 close all
 
 %% Dependencies
-root = '/Users/root1/Desktop/Flocking_maneuvers/flock_maneuver/AWN-target/';
+root = '/Users/admin/Desktop/Flocking_maneuvers/flock_maneuver/AWN-target/';
 
 % addpath([root 'controller_cmpc_3d']);
 % addpath([root 'controller_cmpc_3d/common']);
@@ -33,7 +33,7 @@ params.steps = params.t_end / params.dt;
 % Turning controls
 params.turn = 1; %0:off, 1:on
 params.initsub = 1;
-params.num_leaders = 4;
+params.num_leaders = 5;
 params.eta = 100;
 params.start_turn = 200;
 params.turn_angle = -170;
